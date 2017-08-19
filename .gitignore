@@ -1,0 +1,15 @@
+build/*
+out/*
+*.cia
+*.smdh
+*.3dsx
+*.elf
+*.7z
+*.zip
+*.txt
+*.bat
+*.sh
+*.bin
+*.exe
+*.bnr
+*.icn
