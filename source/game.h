@@ -7,6 +7,7 @@
 #define totalRowsCount ((gridOneSideLayers*2) +1)
 
 extern unsigned int gridCompleteSize;
+extern int visibilityMode;
 
 #define FIRST_WHITE_HOME_ROW_PIECE 0
 #define LAST_WHITE_HOME_ROW_PIECE (homeRowSize-1)
@@ -25,23 +26,36 @@ typedef enum {
 	TEXTURE_TOP_HEX,
 	TEXTURE_WHITE_TOKEN,
 	TEXTURE_BLACK_TOKEN,
-	TEXTURE_HEX_SELECTOR,
+	TEXTURE_HEX_CURRENT,
 	TEXTURE_HEX_POSSIBLE,
+	TEXTURE_HEX_SELECTED,
+	TEXTURE_GAME_BOARD
 } TextureID;
 
-enum HexPieceSides {
+typedef enum {
 	HEX_SIDE_TOP_LEFT = 0,
 	HEX_SIDE_TOP_RIGHT,
 	HEX_SIDE_MID_RIGHT,
 	HEX_SIDE_BOT_RIGHT,
 	HEX_SIDE_BOT_LEFT,
 	HEX_SIDE_MID_LEFT
-};
+} HexPieceSides;
 
-enum TeamsColor {
-	TEAM_WHITE = 0,
-	TEAM_BLACK
-};
+typedef enum {
+	MODE_MOVE_HEX = 0,
+	MODE_MOVE_TOKEN,
+} MoveMode;
+
+typedef enum {
+	TEAM_BLACK = 0,
+	TEAM_WHITE
+} TeamsColor;
+
+typedef enum {
+	VISIBILITY_EXISTS = 0,
+	VISIBILITY_EMPTY,
+	VISIBILITY_LEVEL,
+} Visibility;
 
 typedef struct HexPiece HexPiece;
 typedef struct GameToken GameToken;
@@ -67,3 +81,5 @@ typedef struct {
 
 void initGridSize(void);
 void initGame(HexPiece * grid, Team * teams);
+int moveToken(GameToken * token, HexPieceSides direction, TeamsColor team);
+int moveHex(HexPiece * sourceHex, HexPiece * destinationHex, TeamsColor team);

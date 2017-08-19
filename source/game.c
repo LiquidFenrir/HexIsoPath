@@ -1,5 +1,6 @@
 #include "game.h"
 
+int visibilityMode = VISIBILITY_EXISTS;
 unsigned int gridCompleteSize = 0;
 
 void initGridSize(void)
@@ -51,36 +52,94 @@ void initGame(HexPiece * grid, Team * teams)
 		
 		if (offset == FIRST_WHITE_HOME_ROW_PIECE) {
 			grid[offset].neighbors[HEX_SIDE_TOP_LEFT] = &grid[LAST_WHITE_HOME_ROW_PIECE];
-			grid[offset].neighbors[HEX_SIDE_TOP_RIGHT] = NULL;
-			
-			grid[offset].neighbors[HEX_SIDE_MID_LEFT] = NULL;
 			grid[offset].neighbors[HEX_SIDE_MID_RIGHT] = &grid[offset+1];
 		}
 		else if (offset == LAST_WHITE_HOME_ROW_PIECE) {
-			grid[offset].neighbors[HEX_SIDE_TOP_LEFT] = NULL;
 			grid[offset].neighbors[HEX_SIDE_TOP_RIGHT] = &grid[FIRST_WHITE_HOME_ROW_PIECE];
-			
 			grid[offset].neighbors[HEX_SIDE_MID_LEFT] = &grid[offset-1];
-			grid[offset].neighbors[HEX_SIDE_MID_RIGHT] = NULL;
 		}
 		else {
-			grid[offset].neighbors[HEX_SIDE_TOP_LEFT] = NULL;
-			grid[offset].neighbors[HEX_SIDE_TOP_RIGHT] = NULL;
-			
 			grid[offset].neighbors[HEX_SIDE_MID_LEFT] = &grid[offset-1];
 			grid[offset].neighbors[HEX_SIDE_MID_RIGHT] = &grid[offset+1];
 		}
 		
+		//common to all
 		grid[offset].neighbors[HEX_SIDE_BOT_LEFT] = &grid[LAST_WHITE_HOME_ROW_PIECE+offset+1];
 		grid[offset].neighbors[HEX_SIDE_BOT_RIGHT] = &grid[LAST_WHITE_HOME_ROW_PIECE+offset+2];
 	}
 	
-	// ALL IN BETWEEN	
-	for (unsigned int row = 1; row < totalRowsCount-1; row++) {
+	// ALL IN BETWEEN
+	unsigned int row = 1;
+	for (; row < (totalRowsCount-1)/2; row++) {
 		for (unsigned int hex = 0; hex < hexCountPerRow[row]; hex++) {
 			grid[offset].texture = TEXTURE_MID_HEX;
 			grid[offset].yPos = Y_OFFSET+ (24*row);
 			grid[offset].xPos = xPosFromHex[offset];
+			
+			if (hex != hexCountPerRow[row]-1) {
+				grid[offset].neighbors[HEX_SIDE_MID_RIGHT] = &grid[offset+1];
+				grid[offset].neighbors[HEX_SIDE_TOP_RIGHT] = &grid[offset-hexCountPerRow[row-1]];
+			}
+			if (hex != 0) {
+				grid[offset].neighbors[HEX_SIDE_TOP_LEFT] = &grid[offset-hexCountPerRow[row-1]-1];
+				grid[offset].neighbors[HEX_SIDE_MID_LEFT] = &grid[offset-1];
+			}
+			
+			grid[offset].neighbors[HEX_SIDE_BOT_RIGHT] = &grid[offset+hexCountPerRow[row]+1];
+			grid[offset].neighbors[HEX_SIDE_BOT_LEFT] = &grid[offset+hexCountPerRow[row]];
+			
+			offset++;
+		}
+	}
+	
+	//middle row, with the teleports
+	for (unsigned int hex = 0; hex < hexCountPerRow[row]; hex++) {
+		grid[offset].texture = TEXTURE_MID_HEX;
+		grid[offset].yPos = Y_OFFSET+ (24*row);
+		grid[offset].xPos = xPosFromHex[offset];
+		
+		grid[offset].neighbors[HEX_SIDE_TOP_LEFT] = &grid[offset-hexCountPerRow[row-1]-1];
+		grid[offset].neighbors[HEX_SIDE_TOP_RIGHT] = &grid[offset-hexCountPerRow[row-1]];
+		
+		grid[offset].neighbors[HEX_SIDE_MID_RIGHT] = &grid[offset+1];
+		grid[offset].neighbors[HEX_SIDE_BOT_RIGHT] = &grid[offset+hexCountPerRow[row]];
+		
+		grid[offset].neighbors[HEX_SIDE_MID_LEFT] = &grid[offset-1];
+		grid[offset].neighbors[HEX_SIDE_BOT_LEFT] = &grid[offset+hexCountPerRow[row]-1];
+		
+		if (hex == hexCountPerRow[row]-1) {
+			grid[offset].neighbors[HEX_SIDE_TOP_RIGHT] = NULL;
+			grid[offset].neighbors[HEX_SIDE_MID_RIGHT] = &grid[offset-hexCountPerRow[row]+1];
+			grid[offset].neighbors[HEX_SIDE_BOT_RIGHT] = NULL;
+		}
+		if (hex == 0) {
+			grid[offset].neighbors[HEX_SIDE_TOP_LEFT] = NULL;
+			grid[offset].neighbors[HEX_SIDE_MID_LEFT] = &grid[offset+hexCountPerRow[row]-1];
+			grid[offset].neighbors[HEX_SIDE_BOT_LEFT] = NULL;
+		}
+		
+		offset++;
+	}
+	row++;
+	
+	for (; row < totalRowsCount-1; row++) {
+		for (unsigned int hex = 0; hex < hexCountPerRow[row]; hex++) {
+			grid[offset].texture = TEXTURE_MID_HEX;
+			grid[offset].yPos = Y_OFFSET+ (24*row);
+			grid[offset].xPos = xPosFromHex[offset];
+			
+			grid[offset].neighbors[HEX_SIDE_TOP_LEFT] = &grid[offset-hexCountPerRow[row-1]];
+			grid[offset].neighbors[HEX_SIDE_TOP_RIGHT] = &grid[offset-hexCountPerRow[row-1]+1];
+			
+			if (hex != hexCountPerRow[row]-1) {
+				grid[offset].neighbors[HEX_SIDE_MID_RIGHT] = &grid[offset+1];
+				grid[offset].neighbors[HEX_SIDE_BOT_RIGHT] = &grid[offset+hexCountPerRow[row]];
+			}
+			if (hex != 0) {
+				grid[offset].neighbors[HEX_SIDE_MID_LEFT] = &grid[offset-1];
+				grid[offset].neighbors[HEX_SIDE_BOT_LEFT] = &grid[offset+hexCountPerRow[row]-1];
+			}
+			
 			offset++;
 		}
 	}
@@ -97,28 +156,67 @@ void initGame(HexPiece * grid, Team * teams)
 		grid[offset].xPos = xPosFromHex[offset];
 		
 		if (offset == FIRST_BLACK_HOME_ROW_PIECE) {
-			grid[offset].neighbors[HEX_SIDE_MID_LEFT] = NULL;
 			grid[offset].neighbors[HEX_SIDE_MID_RIGHT] = &grid[offset+1];
-			
 			grid[offset].neighbors[HEX_SIDE_BOT_LEFT] = &grid[LAST_BLACK_HOME_ROW_PIECE];;
-			grid[offset].neighbors[HEX_SIDE_BOT_RIGHT] = NULL;
 		}
 		else if (offset == LAST_BLACK_HOME_ROW_PIECE) {
 			grid[offset].neighbors[HEX_SIDE_MID_LEFT] = &grid[offset-1];
-			grid[offset].neighbors[HEX_SIDE_MID_RIGHT] = NULL;
-			
-			grid[offset].neighbors[HEX_SIDE_BOT_LEFT] = NULL;
 			grid[offset].neighbors[HEX_SIDE_BOT_RIGHT] = &grid[FIRST_BLACK_HOME_ROW_PIECE];;
 		}
 		else {
 			grid[offset].neighbors[HEX_SIDE_MID_LEFT] = &grid[offset-1];
 			grid[offset].neighbors[HEX_SIDE_MID_RIGHT] = &grid[offset+1];
-			
-			grid[offset].neighbors[HEX_SIDE_BOT_LEFT] = NULL;
-			grid[offset].neighbors[HEX_SIDE_BOT_RIGHT] = NULL;
 		}
 		
-		grid[offset].neighbors[HEX_SIDE_TOP_LEFT] = &grid[FIRST_BLACK_HOME_ROW_PIECE-homeRowSize-1];
-		grid[offset].neighbors[HEX_SIDE_TOP_RIGHT] = &grid[FIRST_BLACK_HOME_ROW_PIECE-homeRowSize];
+		//common to all
+		grid[offset].neighbors[HEX_SIDE_TOP_LEFT] = &grid[offset-homeRowSize-1];
+		grid[offset].neighbors[HEX_SIDE_TOP_RIGHT] = &grid[offset-homeRowSize];
 	}
+}
+
+int moveToken(GameToken * token, HexPieceSides direction, TeamsColor team)
+{
+	HexPiece * nextHex = token->under->neighbors[direction];
+	
+	//can't move if there's nothing there
+	if (nextHex == NULL)
+		return -1;
+	
+	//can't move there if there's already a token there
+	if (nextHex->above != NULL)
+		return -1;
+	
+	//can't move there if it's not at the right height
+	if (nextHex->texture != (team == TEAM_WHITE ? TEXTURE_TOP_HEX : TEXTURE_BOT_HEX))
+		return -1;
+	
+	token->under->above = NULL; //remove the token from the previous hex
+	token->under = nextHex; //put it on the new one
+	token->under->above = token; //tell the new one the token is above it
+	
+	return 0;
+}
+
+int moveHex(HexPiece * sourceHex, HexPiece * destinationHex, TeamsColor team)
+{
+	//can't if they're the same
+	if (destinationHex == sourceHex)
+		return -1;
+	
+	//can't do anything if there is a token on them
+	if (destinationHex->above != NULL || sourceHex->above != NULL)
+		return -1;
+	
+	//if team white, it tries to add
+	TextureID destinationTexture = (team == TEAM_WHITE ? TEXTURE_TOP_HEX : TEXTURE_BOT_HEX);
+	TextureID sourceTexture = (team == TEAM_WHITE ? TEXTURE_BOT_HEX : TEXTURE_TOP_HEX);
+	
+	//can't if the source is at the bottom or the destination is at the top/reverse, depending on the team
+	if (destinationHex->texture == destinationTexture || sourceHex->texture == sourceTexture)
+		return -1;
+	
+	destinationHex->texture++;
+	sourceHex->texture--;
+	
+	return 0;
 }
