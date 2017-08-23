@@ -150,7 +150,7 @@ void initGame(HexPiece * grid, Team * teams)
 		grid[offset].texture = TEXTURE_BOT_HEX;
 		
 		teams[TEAM_BLACK].tokens[offset-FIRST_BLACK_HOME_ROW_PIECE].under = &grid[offset];
-		grid[offset].above = &teams[TEAM_BLACK].tokens[-FIRST_BLACK_HOME_ROW_PIECE];
+		grid[offset].above = &teams[TEAM_BLACK].tokens[offset-FIRST_BLACK_HOME_ROW_PIECE];
 		
 		grid[offset].yPos = Y_OFFSET+ (24*(totalRowsCount-1));
 		grid[offset].xPos = xPosFromHex[offset];
