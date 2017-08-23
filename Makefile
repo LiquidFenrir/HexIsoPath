@@ -18,7 +18,7 @@ APP_AUTHOR          :=	Original game by pocket38, port by LiquidFenrir
 TARGET              :=	$(subst $e ,_,$(notdir $(APP_TITLE)))
 OUTDIR              :=	out
 BUILD               :=	build
-SOURCES             :=	source source/pp2d
+SOURCES             :=	source source/pp2d/pp2d
 INCLUDES            :=	include
 ROMFS               :=	romfs
 

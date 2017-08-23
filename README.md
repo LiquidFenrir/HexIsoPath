@@ -5,8 +5,7 @@ It works as both a .cia and a .3dsx, so people without CFW but access to the HBL
 
 # License
 
-HexIsoPath is licensed under the MIT license, but includes the currently unlicensed 2D graphics library for 3DS, [pp2p](https://github.com/BernardoGiordano/pp2d/) by [BernardoGiordano](https://github.com/BernardoGiordano). More specifically, [this commit](https://github.com/BernardoGiordano/pp2d/commit/956aff826fca7f370dc0762ed46ad144e49abaa5).  
-It was modified to remove the example, because it was conflicting with the actual game code.
+HexIsoPath is licensed under the MIT license, and includes the MIT-licensed 2D graphics library for 3DS, [pp2p](https://github.com/BernardoGiordano/pp2d/) by [BernardoGiordano](https://github.com/BernardoGiordano).
 
 # The game
 
