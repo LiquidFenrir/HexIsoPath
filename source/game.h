@@ -2,6 +2,21 @@
 
 #include "pp2d/pp2d.h"
 
+#define DEBUGPOS(...) do { \
+	char * strPos = NULL; \
+	s32 strPosLen = asprintf(&strPos, "%s (line %d)...\n", __func__, __LINE__); \
+	svcOutputDebugString(strPos, strPosLen); \
+	free(strPos); \
+	DEBUG(__VA_ARGS__); \
+} while(0)
+
+#define DEBUG(...) do { \
+	char * strDebug = NULL; \
+	s32 strDebugLen = asprintf(&strDebug, __VA_ARGS__); \
+	svcOutputDebugString(strDebug, strDebugLen); \
+	free(strDebug); \
+} while(0)
+
 #define homeRowSize 4 //each color (white and black) has a home row
 #define gridOneSideLayers 3 //doesn't include the middle layer where both sides meet, but includes the home row
 #define totalRowsCount ((gridOneSideLayers*2) +1)
@@ -26,6 +41,7 @@ typedef enum {
 	TEXTURE_TOP_HEX,
 	TEXTURE_WHITE_TOKEN,
 	TEXTURE_BLACK_TOKEN,
+	TEXTURE_THREATENED_TOKEN,
 	TEXTURE_HEX_CURRENT,
 	TEXTURE_HEX_POSSIBLE,
 	TEXTURE_HEX_SELECTED,
@@ -65,13 +81,14 @@ struct HexPiece {
 	HexPiece * neighbors[6];
 	GameToken * above;
 	int yPos, xPos;
+	unsigned int offset;
 };
 
 struct GameToken {
 	TextureID color; //also works as team
 	HexPiece * under;
-	bool surrounded;
-	bool removed;
+	bool threatened;
+	bool captured;
 	bool finished;
 };
 
@@ -83,3 +100,4 @@ void initGridSize(void);
 void initGame(HexPiece * grid, Team * teams);
 int moveToken(GameToken * token, HexPieceSides direction, TeamsColor team);
 int moveHex(HexPiece * sourceHex, HexPiece * destinationHex, TeamsColor team);
+void handleThreats(Team * teams);

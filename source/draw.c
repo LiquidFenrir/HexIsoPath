@@ -12,6 +12,7 @@ void initTextures(void)
 {
 	pp2d_load_texture_png(TEXTURE_WHITE_TOKEN, "romfs:/white_token.png");
 	pp2d_load_texture_png(TEXTURE_BLACK_TOKEN, "romfs:/black_token.png");
+	pp2d_load_texture_png(TEXTURE_THREATENED_TOKEN, "romfs:/token_threatened.png");
 	
 	pp2d_load_texture_png(TEXTURE_BOT_HEX, "romfs:/hex_bot.png");
 	pp2d_load_texture_png(TEXTURE_MID_HEX, "romfs:/hex_mid.png");
@@ -45,6 +46,8 @@ void drawCurrent(HexPiece * selectedHex, HexPieceSides selectedSide)
 void drawToken(GameToken token)
 {
 	pp2d_draw_texture(token.color, token.under->xPos, token.under->yPos);
+	if (token.threatened)
+		pp2d_draw_texture(TEXTURE_THREATENED_TOKEN, token.under->xPos, token.under->yPos);
 }
 
 void drawHex(HexPiece hex)
@@ -63,13 +66,17 @@ void drawGrid(HexPiece * grid, Team * teams, TeamsColor team, int selectedToken,
 	
 	//draw every token ON TOP of the hexes, and the selector and neighbors if needed
 	for (int token = 0; token < homeRowSize; token++) {
-		drawToken(teams[TEAM_WHITE].tokens[token]);
-		if (selectedToken == token && team == TEAM_WHITE)
-			drawCurrent(teams[TEAM_WHITE].tokens[token].under, selectedSide);
+		if (!teams[TEAM_WHITE].tokens[token].captured) {
+			drawToken(teams[TEAM_WHITE].tokens[token]);
+			if (selectedToken == token && team == TEAM_WHITE)
+				drawCurrent(teams[TEAM_WHITE].tokens[token].under, selectedSide);
+		}
 		
-		drawToken(teams[TEAM_BLACK].tokens[token]);
-		if (selectedToken == token && team == TEAM_BLACK)
-			drawCurrent(teams[TEAM_BLACK].tokens[token].under, selectedSide);
+		if (!teams[TEAM_BLACK].tokens[token].captured) {
+			drawToken(teams[TEAM_BLACK].tokens[token]);
+			if (selectedToken == token && team == TEAM_BLACK)
+				drawCurrent(teams[TEAM_BLACK].tokens[token].under, selectedSide);
+		}
 	}
 	
 	if (sourceHex != NULL) {

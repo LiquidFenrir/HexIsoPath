@@ -50,6 +50,8 @@ void initGame(HexPiece * grid, Team * teams)
 		grid[offset].yPos = Y_OFFSET;
 		grid[offset].xPos = xPosFromHex[offset];
 		
+		grid[offset].offset = offset;
+		
 		if (offset == FIRST_WHITE_HOME_ROW_PIECE) {
 			grid[offset].neighbors[HEX_SIDE_TOP_LEFT] = &grid[LAST_WHITE_HOME_ROW_PIECE];
 			grid[offset].neighbors[HEX_SIDE_MID_RIGHT] = &grid[offset+1];
@@ -75,6 +77,7 @@ void initGame(HexPiece * grid, Team * teams)
 			grid[offset].texture = TEXTURE_MID_HEX;
 			grid[offset].yPos = Y_OFFSET+ (24*row);
 			grid[offset].xPos = xPosFromHex[offset];
+			grid[offset].offset = offset;
 			
 			if (hex != hexCountPerRow[row]-1) {
 				grid[offset].neighbors[HEX_SIDE_MID_RIGHT] = &grid[offset+1];
@@ -97,6 +100,7 @@ void initGame(HexPiece * grid, Team * teams)
 		grid[offset].texture = TEXTURE_MID_HEX;
 		grid[offset].yPos = Y_OFFSET+ (24*row);
 		grid[offset].xPos = xPosFromHex[offset];
+		grid[offset].offset = offset;
 		
 		grid[offset].neighbors[HEX_SIDE_TOP_LEFT] = &grid[offset-hexCountPerRow[row-1]-1];
 		grid[offset].neighbors[HEX_SIDE_TOP_RIGHT] = &grid[offset-hexCountPerRow[row-1]];
@@ -127,6 +131,7 @@ void initGame(HexPiece * grid, Team * teams)
 			grid[offset].texture = TEXTURE_MID_HEX;
 			grid[offset].yPos = Y_OFFSET+ (24*row);
 			grid[offset].xPos = xPosFromHex[offset];
+			grid[offset].offset = offset;
 			
 			grid[offset].neighbors[HEX_SIDE_TOP_LEFT] = &grid[offset-hexCountPerRow[row-1]];
 			grid[offset].neighbors[HEX_SIDE_TOP_RIGHT] = &grid[offset-hexCountPerRow[row-1]+1];
@@ -155,6 +160,8 @@ void initGame(HexPiece * grid, Team * teams)
 		grid[offset].yPos = Y_OFFSET+ (24*(totalRowsCount-1));
 		grid[offset].xPos = xPosFromHex[offset];
 		
+		grid[offset].offset = offset;
+		
 		if (offset == FIRST_BLACK_HOME_ROW_PIECE) {
 			grid[offset].neighbors[HEX_SIDE_MID_RIGHT] = &grid[offset+1];
 			grid[offset].neighbors[HEX_SIDE_BOT_LEFT] = &grid[LAST_BLACK_HOME_ROW_PIECE];;
@@ -176,6 +183,9 @@ void initGame(HexPiece * grid, Team * teams)
 
 int moveToken(GameToken * token, HexPieceSides direction, TeamsColor team)
 {
+	if (token->captured)
+		return -1;
+	
 	HexPiece * nextHex = token->under->neighbors[direction];
 	
 	//can't move if there's nothing there
@@ -188,6 +198,13 @@ int moveToken(GameToken * token, HexPieceSides direction, TeamsColor team)
 	
 	//can't move there if it's not at the right height
 	if (nextHex->texture != (team == TEAM_WHITE ? TEXTURE_TOP_HEX : TEXTURE_BOT_HEX))
+		return -1;
+	
+	//the tokens can't return to their home row but they can move inside it if they haven't left it
+	if (team == TEAM_WHITE && token->under->offset > LAST_WHITE_HOME_ROW_PIECE && nextHex->offset <= LAST_WHITE_HOME_ROW_PIECE)
+		return -1;
+	
+	if (team == TEAM_BLACK && token->under->offset < FIRST_BLACK_HOME_ROW_PIECE && nextHex->offset >= FIRST_BLACK_HOME_ROW_PIECE)
 		return -1;
 	
 	token->under->above = NULL; //remove the token from the previous hex
@@ -207,16 +224,61 @@ int moveHex(HexPiece * sourceHex, HexPiece * destinationHex, TeamsColor team)
 	if (destinationHex->above != NULL || sourceHex->above != NULL)
 		return -1;
 	
-	//if team white, it tries to add
-	TextureID destinationTexture = (team == TEAM_WHITE ? TEXTURE_TOP_HEX : TEXTURE_BOT_HEX);
-	TextureID sourceTexture = (team == TEAM_WHITE ? TEXTURE_BOT_HEX : TEXTURE_TOP_HEX);
-	
 	//can't if the source is at the bottom or the destination is at the top/reverse, depending on the team
-	if (destinationHex->texture == destinationTexture || sourceHex->texture == sourceTexture)
+	if (destinationHex->texture == TEXTURE_TOP_HEX || sourceHex->texture == TEXTURE_BOT_HEX)
+		return -1;
+	
+	//each team is not allowed to modified its own home row
+	if (team == TEAM_BLACK && (destinationHex->offset >= FIRST_BLACK_HOME_ROW_PIECE || sourceHex->offset >= FIRST_BLACK_HOME_ROW_PIECE))
+		return -1;
+	
+	if (team == TEAM_WHITE && (destinationHex->offset <= LAST_WHITE_HOME_ROW_PIECE || sourceHex->offset <= LAST_WHITE_HOME_ROW_PIECE))
 		return -1;
 	
 	destinationHex->texture++;
 	sourceHex->texture--;
 	
 	return 0;
+}
+
+void handleThreats(Team * teams)
+{
+	for (int team = TEAM_WHITE; team >= TEAM_BLACK; team--) {
+		Team * currentTeam = &teams[team];
+		for (int token = 0; token < homeRowSize; token++) {
+			GameToken * currentToken = &currentTeam->tokens[token];
+			
+			if (currentToken->captured)
+				continue;
+			
+			HexPiece * hexUnderToken = currentToken->under;
+			int neighborsCount = 0;
+			for (int side = HEX_SIDE_TOP_LEFT; side <= HEX_SIDE_MID_LEFT; side++) {
+				HexPiece * neighborHex = hexUnderToken->neighbors[side];
+				if (neighborHex != NULL) { //if there is even a neighbor to check
+					GameToken * neighborToken = neighborHex->above;
+					if (neighborToken != NULL) { //if the neighbor hex has a token on top
+						if (neighborToken->color != currentToken->color) { //if the token is from the other team
+							neighborsCount++;
+						}
+					}
+				}
+			}
+			
+			if (neighborsCount >= 2) {
+				if (currentToken->threatened) {
+					currentToken->captured = true;
+					hexUnderToken->above = NULL;
+					currentToken->under = NULL;
+				}
+				else {
+					currentToken->threatened = true;
+				}
+			}
+			else {
+				//clear the threatened flag if it moved into a safe spot
+				currentToken->threatened = false;
+			}
+		}
+	}
 }

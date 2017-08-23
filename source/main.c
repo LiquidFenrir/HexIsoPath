@@ -1,7 +1,6 @@
 #include "draw.h"
 
 int main() {
-
 	romfsInit();
 	pp2d_init();
 	
@@ -69,6 +68,7 @@ int main() {
 							movedToken = false;
 							movedHex = false;
 							whitesTurn = !whitesTurn;
+							handleThreats(teams);
 						}
 						else {
 							movedToken = true;
@@ -83,6 +83,7 @@ int main() {
 								movedToken = false;
 								movedHex = false;
 								whitesTurn = !whitesTurn;
+								handleThreats(teams);
 							}
 							else {
 								movedHex = true;
@@ -91,6 +92,15 @@ int main() {
 						}
 					}
 					else {
+						TeamsColor team = whitesTurn ? TEAM_WHITE : TEAM_BLACK;
+						
+						//dont even allow them to select their home row hexes to save time
+						if (team == TEAM_BLACK && sourceHex->offset >= FIRST_BLACK_HOME_ROW_PIECE)
+							continue;
+						
+						if (team == TEAM_WHITE && sourceHex->offset <= LAST_WHITE_HOME_ROW_PIECE)
+							continue;
+						
 						selectedSource = true;
 						destinationHex = &grid[offset];
 					}
