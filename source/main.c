@@ -9,6 +9,7 @@ int main() {
 	
 	u32 blackTextColor = RGBA8(0, 0, 0, 0xFF);
 	u32 whiteTextColor = RGBA8(0xFF, 0xFF, 0xFF, 0xFF);
+	u32 redTextColor = RGBA8(0xBB, 0, 0, 0xFF);
 	
 	initGridSize();
 	HexPiece grid[gridCompleteSize];
@@ -18,6 +19,7 @@ int main() {
 	initGame(grid, teams);
 		
 	bool whitesTurn = true;
+	bool gameRunning = true;
 	int selectedToken = -1;
 	int selectedSide = HEX_SIDE_TOP_LEFT;
 	
@@ -37,10 +39,22 @@ int main() {
 
 		pp2d_begin_draw(GFX_TOP);
 		
-		if (whitesTurn)
-			pp2d_draw_text_center(GFX_TOP, 100, 1.0f, 1.0f, whiteTextColor, "It's white's turn!");
-		else
-			pp2d_draw_text_center(GFX_TOP, 100, 1.0f, 1.0f, blackTextColor, "It's black's turn!");
+		pp2d_draw_text_center(GFX_TOP, 128, 0.6f, 0.6f, redTextColor, "Press START to quit!");
+		
+		if (teams[TEAM_WHITE].winner) {
+			pp2d_draw_text_center(GFX_TOP, 100, 1.0f, 1.0f, whiteTextColor, "White team won!");
+			gameRunning = false;
+		}
+		else if (teams[TEAM_BLACK].winner) {
+			pp2d_draw_text_center(GFX_TOP, 100, 1.0f, 1.0f, blackTextColor, "Black team won!");
+			gameRunning = false;
+		}
+		else {
+			if (whitesTurn)
+				pp2d_draw_text_center(GFX_TOP, 100, 1.0f, 1.0f, whiteTextColor, "It's white's turn!");
+			else
+				pp2d_draw_text_center(GFX_TOP, 100, 1.0f, 1.0f, blackTextColor, "It's black's turn!");
+		}
 		
 		pp2d_draw_on(GFX_BOTTOM);
 		
@@ -49,6 +63,7 @@ int main() {
 		u32 kDown = hidKeysDown();
 		if (kDown & KEY_START)
 			break;
+		else if (!gameRunning); //don't allow inputs other than quitting once a team has won
 		else if (kDown & KEY_L && mode == MODE_MOVE_TOKEN) {
 			selectedToken--;
 			if (selectedToken < 0)
@@ -62,7 +77,7 @@ int main() {
 		else if (kDown & (KEY_A | KEY_Y)) {
 			if (kDown & KEY_A) {
 				if (mode == MODE_MOVE_TOKEN) {
-					ret = moveToken(&teams[whitesTurn].tokens[selectedToken], (HexPieceSides)selectedSide, whitesTurn ? TEAM_WHITE : TEAM_BLACK);
+					ret = moveToken(&teams[whitesTurn].tokens[selectedToken], (HexPieceSides)selectedSide);
 					if (ret == 0) {
 						if (movedHex) {
 							movedToken = false;

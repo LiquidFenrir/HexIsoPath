@@ -75,6 +75,7 @@ typedef enum {
 
 typedef struct HexPiece HexPiece;
 typedef struct GameToken GameToken;
+typedef struct Team Team;
 
 struct HexPiece {
 	TextureID texture; //also works as level
@@ -89,15 +90,17 @@ struct GameToken {
 	HexPiece * under;
 	bool threatened;
 	bool captured;
-	bool finished;
+	Team * team;
 };
 
-typedef struct {
+struct Team {
+	TeamsColor color;
 	GameToken tokens[homeRowSize];
-} Team;
+	bool winner;
+};
 
 void initGridSize(void);
 void initGame(HexPiece * grid, Team * teams);
-int moveToken(GameToken * token, HexPieceSides direction, TeamsColor team);
+int moveToken(GameToken * token, HexPieceSides direction);
 int moveHex(HexPiece * sourceHex, HexPiece * destinationHex, TeamsColor team);
 void handleThreats(Team * teams);

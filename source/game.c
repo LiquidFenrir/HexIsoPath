@@ -38,14 +38,20 @@ void initGame(HexPiece * grid, Team * teams)
 		}
 	}
 	
+	teams[TEAM_WHITE].color = TEAM_WHITE;
+	teams[TEAM_BLACK].color = TEAM_BLACK;
+	
 	offset = 0;
 	// WHITE HOME ROW
 	for (offset = 0; offset < homeRowSize; offset++) {
-		teams[TEAM_WHITE].tokens[offset].color = TEXTURE_WHITE_TOKEN;
+		GameToken * currentToken = &teams[TEAM_WHITE].tokens[offset];
+		currentToken->team = &teams[TEAM_WHITE];
+		
+		currentToken->color = TEXTURE_WHITE_TOKEN;
 		grid[offset].texture = TEXTURE_TOP_HEX;
 		
-		teams[TEAM_WHITE].tokens[offset].under = &grid[offset];
-		grid[offset].above = &teams[TEAM_WHITE].tokens[offset];
+		currentToken->under = &grid[offset];
+		grid[offset].above = currentToken;
 		
 		grid[offset].yPos = Y_OFFSET;
 		grid[offset].xPos = xPosFromHex[offset];
@@ -151,11 +157,14 @@ void initGame(HexPiece * grid, Team * teams)
 	
 	// BLACK HOME ROW
 	for (; offset < gridCompleteSize; offset++) {
-		teams[TEAM_BLACK].tokens[offset-FIRST_BLACK_HOME_ROW_PIECE].color = TEXTURE_BLACK_TOKEN;
+		GameToken * currentToken = &teams[TEAM_BLACK].tokens[offset-FIRST_BLACK_HOME_ROW_PIECE];
+		currentToken->team = &teams[TEAM_BLACK];
+		
+		currentToken->color = TEXTURE_BLACK_TOKEN;
 		grid[offset].texture = TEXTURE_BOT_HEX;
 		
-		teams[TEAM_BLACK].tokens[offset-FIRST_BLACK_HOME_ROW_PIECE].under = &grid[offset];
-		grid[offset].above = &teams[TEAM_BLACK].tokens[offset-FIRST_BLACK_HOME_ROW_PIECE];
+		currentToken->under = &grid[offset];
+		grid[offset].above = currentToken;
 		
 		grid[offset].yPos = Y_OFFSET+ (24*(totalRowsCount-1));
 		grid[offset].xPos = xPosFromHex[offset];
@@ -181,7 +190,7 @@ void initGame(HexPiece * grid, Team * teams)
 	}
 }
 
-int moveToken(GameToken * token, HexPieceSides direction, TeamsColor team)
+int moveToken(GameToken * token, HexPieceSides direction)
 {
 	if (token->captured)
 		return -1;
@@ -197,19 +206,26 @@ int moveToken(GameToken * token, HexPieceSides direction, TeamsColor team)
 		return -1;
 	
 	//can't move there if it's not at the right height
-	if (nextHex->texture != (team == TEAM_WHITE ? TEXTURE_TOP_HEX : TEXTURE_BOT_HEX))
+	if (nextHex->texture != (token->team->color == TEAM_WHITE ? TEXTURE_TOP_HEX : TEXTURE_BOT_HEX))
 		return -1;
 	
 	//the tokens can't return to their home row but they can move inside it if they haven't left it
-	if (team == TEAM_WHITE && token->under->offset > LAST_WHITE_HOME_ROW_PIECE && nextHex->offset <= LAST_WHITE_HOME_ROW_PIECE)
+	if (token->team->color == TEAM_WHITE && token->under->offset > LAST_WHITE_HOME_ROW_PIECE && nextHex->offset <= LAST_WHITE_HOME_ROW_PIECE)
 		return -1;
 	
-	if (team == TEAM_BLACK && token->under->offset < FIRST_BLACK_HOME_ROW_PIECE && nextHex->offset >= FIRST_BLACK_HOME_ROW_PIECE)
+	if (token->team->color == TEAM_BLACK && token->under->offset < FIRST_BLACK_HOME_ROW_PIECE && nextHex->offset >= FIRST_BLACK_HOME_ROW_PIECE)
 		return -1;
 	
 	token->under->above = NULL; //remove the token from the previous hex
 	token->under = nextHex; //put it on the new one
 	token->under->above = token; //tell the new one the token is above it
+	
+	//check for victory (reminder: winning is getting a token to the home row of the other team)
+	if (token->team->color == TEAM_WHITE && token->under->offset >= FIRST_BLACK_HOME_ROW_PIECE)
+		token->team->winner = true;
+	
+	if (token->team->color == TEAM_BLACK && token->under->offset <= LAST_WHITE_HOME_ROW_PIECE)
+		token->team->winner = true;
 	
 	return 0;
 }
@@ -224,15 +240,15 @@ int moveHex(HexPiece * sourceHex, HexPiece * destinationHex, TeamsColor team)
 	if (destinationHex->above != NULL || sourceHex->above != NULL)
 		return -1;
 	
-	//can't if the source is at the bottom or the destination is at the top/reverse, depending on the team
+	//can't if the source is at the bottom or the destination is at the top
 	if (destinationHex->texture == TEXTURE_TOP_HEX || sourceHex->texture == TEXTURE_BOT_HEX)
 		return -1;
 	
 	//each team is not allowed to modified its own home row
-	if (team == TEAM_BLACK && (destinationHex->offset >= FIRST_BLACK_HOME_ROW_PIECE || sourceHex->offset >= FIRST_BLACK_HOME_ROW_PIECE))
+	if (team == TEAM_WHITE && (destinationHex->offset <= LAST_WHITE_HOME_ROW_PIECE || sourceHex->offset <= LAST_WHITE_HOME_ROW_PIECE))
 		return -1;
 	
-	if (team == TEAM_WHITE && (destinationHex->offset <= LAST_WHITE_HOME_ROW_PIECE || sourceHex->offset <= LAST_WHITE_HOME_ROW_PIECE))
+	if (team == TEAM_BLACK && (destinationHex->offset >= FIRST_BLACK_HOME_ROW_PIECE || sourceHex->offset >= FIRST_BLACK_HOME_ROW_PIECE))
 		return -1;
 	
 	destinationHex->texture++;
