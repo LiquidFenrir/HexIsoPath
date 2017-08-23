@@ -42,7 +42,7 @@ UNIQUE_ID           :=	0x58316
 PRODUCT_CODE        :=	CTR-P-HXIP
 
 # Don't really need to change this
-ICON_FLAGS          :=	nosavebackups, visible
+ICON_FLAGS          :=	nosavebackups,visible
 
 #---------------------------------------------------------------------------------
 # options for code generation
