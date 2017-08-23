@@ -11,7 +11,7 @@ include $(DEVKITARM)/3ds_rules
 
 # Your values.
 APP_TITLE           :=	HexIsoPath
-APP_DESCRIPTION     :=	A strategic board game with hexagons, for the 3DS!
+APP_DESCRIPTION     :=	A strategic board game with hexagons!
 APP_AUTHOR          :=	Original game by pocket38, port by LiquidFenrir
 
 
