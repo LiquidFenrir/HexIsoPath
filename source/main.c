@@ -1,11 +1,20 @@
 #include "draw.h"
+#include "uds.h"
 
 int main() {
+	udsInit(0x3000, NULL);
 	romfsInit();
-	pp2d_init();
 	
-	initScreens();
-	initTextures();
+	#ifdef CONSOLEMODE
+		gfxInitDefault();
+		consoleInit(GFX_TOP, NULL);
+	#else
+		consoleDebugInit(debugDevice_SVC);
+		
+		pp2d_init();
+		initScreens();
+		initTextures();
+	#endif
 	
 	u32 blackTextColor = RGBA8(0, 0, 0, 0xFF);
 	u32 whiteTextColor = RGBA8(0xFF, 0xFF, 0xFF, 0xFF);
@@ -17,7 +26,11 @@ int main() {
 	Team teams[homeRowSize];
 	memset(teams, 0, sizeof(Team)*homeRowSize);
 	initGame(grid, teams);
-		
+	
+	bool server = false;
+	bool networkPlay = false;
+	TeamsColor networkTeam = TEAM_WHITE;
+	
 	bool whitesTurn = true;
 	bool gameRunning = true;
 	int selectedToken = -1;
@@ -36,7 +49,9 @@ int main() {
 	
 	while (aptMainLoop()) {
 		hidScanInput();
-
+		u32 kDown = hidKeysDown();
+		
+		#ifndef CONSOLEMODE
 		pp2d_begin_draw(GFX_TOP);
 		
 		pp2d_draw_text_center(GFX_TOP, 128, 0.6f, 0.6f, redTextColor, "Press START to quit!");
@@ -56,11 +71,32 @@ int main() {
 				pp2d_draw_text_center(GFX_TOP, 100, 1.0f, 1.0f, blackTextColor, "It's black's turn!");
 		}
 		
+		if (networkPlay) {
+			if (server)
+				pp2d_draw_text(8, SCREEN_HEIGHT-24, 0.6f, 0.6f, whiteTextColor, "Server");
+			else
+				pp2d_draw_text(8, SCREEN_HEIGHT-24, 0.6f, 0.6f, blackTextColor, "Client");
+			
+			//if it's your turn to play, send the keys you press
+			if (networkTeam == (whitesTurn ? TEAM_WHITE : TEAM_BLACK)) {
+				u32 sendKeys = kDown & ~KEY_START;
+				sendData(&sendKeys, sizeof(u32));
+			}
+			//if it's not your turn, receive the keys being pressed by the other
+			else {
+				u32 receivedKeys = 0;
+				size_t receivedSize = 0;
+				receiveData(&receivedKeys, sizeof(u32), &receivedSize);
+				kDown = receivedKeys | (kDown & KEY_START);
+			}
+			//only exception is START key to allow quitting at any time
+		}
+		
 		pp2d_draw_on(GFX_BOTTOM);
 		
 		drawGrid(grid, teams, whitesTurn ? TEAM_WHITE : TEAM_BLACK, selectedToken, (HexPieceSides)selectedSide, sourceHex, destinationHex);
+		#endif
 		
-		u32 kDown = hidKeysDown();
 		if (kDown & KEY_START)
 			break;
 		else if (!gameRunning); //don't allow inputs other than quitting once a team has won
@@ -84,6 +120,8 @@ int main() {
 							movedHex = false;
 							whitesTurn = !whitesTurn;
 							handleThreats(teams);
+							mode = MODE_MOVE_HEX;
+							selectedToken = 0;
 						}
 						else {
 							movedToken = true;
@@ -99,6 +137,8 @@ int main() {
 								movedHex = false;
 								whitesTurn = !whitesTurn;
 								handleThreats(teams);
+								mode = MODE_MOVE_HEX;
+								selectedToken = 0;
 							}
 							else {
 								movedHex = true;
@@ -205,14 +245,48 @@ int main() {
 				}
 			}
 		}
+		else if (kDown & KEY_UP && !networkPlay) {
+			//the server is the white team
+			server = true;
+			ret = initComm(server);
+			DEBUG("initComm server: %.8x\n", ret);
+			if (R_SUCCEEDED(ret)) {
+				networkPlay = true;
+				networkTeam = TEAM_WHITE;
+			}
+		}
+		else if (kDown & KEY_DOWN && !networkPlay) {
+			//the client is the black team
+			server = false;
+			ret = initComm(server);
+			DEBUG("initComm client: %.8x\n", ret);
+			if (R_SUCCEEDED(ret)) {
+				networkPlay = true;
+				networkTeam = TEAM_BLACK;
+			}
+		}
 		
-		pp2d_end_draw();
+		#ifdef CONSOLEMODE
+			gfxFlushBuffers();
+			gfxSwapBuffers();
+			gspWaitForVBlank();
+		#else
+			pp2d_end_draw();
+		#endif
 	}
-	
-	pp2d_end_draw();
 
-	pp2d_exit();
+	if (networkPlay)
+		exitComm(server);
+	
+	#ifdef CONSOLEMODE
+		gfxExit();
+	#else
+		pp2d_end_draw();
+		pp2d_exit();
+	#endif
+	
 	romfsExit();
+	udsExit();
 	
 	return 0;
 }

@@ -2,20 +2,23 @@
 
 #include "pp2d/pp2d/pp2d.h"
 
-#define DEBUGPOS(...) do { \
-	char * strPos = NULL; \
-	s32 strPosLen = asprintf(&strPos, "%s (line %d)...\n", __func__, __LINE__); \
-	svcOutputDebugString(strPos, strPosLen); \
-	free(strPos); \
-	DEBUG(__VA_ARGS__); \
-} while(0)
+// #define CONSOLEMODE 1 //un/comment at will to toggle debug mode
 
-#define DEBUG(...) do { \
-	char * strDebug = NULL; \
-	s32 strDebugLen = asprintf(&strDebug, __VA_ARGS__); \
-	svcOutputDebugString(strDebug, strDebugLen); \
-	free(strDebug); \
-} while(0)
+#ifdef CONSOLEMODE
+	#define DEBUGPOS(...) \
+		printf("%s (line %d)...\n", __func__, __LINE__); \
+		DEBUG(__VA_ARGS__)
+#else
+	#define DEBUGPOS(...) \
+		fprintf(stderr, "%s (line %d)...\n", __func__, __LINE__); \
+		DEBUG(__VA_ARGS__)
+#endif
+
+#ifdef CONSOLEMODE
+	#define DEBUG(...) printf(__VA_ARGS__)
+#else
+	#define DEBUG(...) fprintf(stderr, __VA_ARGS__)
+#endif
 
 #define homeRowSize 4 //each color (white and black) has a home row
 #define gridOneSideLayers 3 //doesn't include the middle layer where both sides meet, but includes the home row
