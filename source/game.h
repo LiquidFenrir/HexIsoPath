@@ -1,6 +1,6 @@
 #pragma once
 
-#include "pp2d/pp2d/pp2d.h"
+#include "colors.h"
 
 // #define CONSOLEMODE 1 //un/comment at will to toggle debug mode
 
@@ -39,18 +39,11 @@ extern int visibilityMode;
 #define Y_OFFSET 32
 
 typedef enum {
-	TEXTURE_BOT_HEX = 1,
-	TEXTURE_MID_HEX,
-	TEXTURE_TOP_HEX,
-	TEXTURE_WHITE_TOKEN,
-	TEXTURE_BLACK_TOKEN,
-	TEXTURE_THREATENED_TOKEN,
-	TEXTURE_HEX_CURRENT,
-	TEXTURE_HEX_POSSIBLE,
-	TEXTURE_HEX_SELECTED,
-	TEXTURE_TOP_BORDER,
-	TEXTURE_BOTTOM_BORDER,
-	TEXTURE_SIDE_BORDER,
+	TEXTURE_SIDE_BORDER = 1,
+	TEXTURE_HEX,
+	TEXTURE_HEX_OUTER,
+	TEXTURE_TOKEN,
+	TEXTURE_TOKEN_OUTER,
 } TextureID;
 
 typedef enum {
@@ -83,7 +76,7 @@ typedef struct GameToken GameToken;
 typedef struct Team Team;
 
 struct HexPiece {
-	TextureID texture; //also works as level
+	u32 color; //also works as level
 	HexPiece * neighbors[6];
 	GameToken * above;
 	int yPos, xPos;
@@ -91,7 +84,7 @@ struct HexPiece {
 };
 
 struct GameToken {
-	TextureID color; //also works as team
+	u32 color; //also works as team
 	HexPiece * under;
 	bool threatened;
 	bool captured;

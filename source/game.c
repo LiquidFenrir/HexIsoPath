@@ -47,8 +47,8 @@ void initGame(HexPiece * grid, Team * teams)
 		GameToken * currentToken = &teams[TEAM_WHITE].tokens[offset];
 		currentToken->team = &teams[TEAM_WHITE];
 		
-		currentToken->color = TEXTURE_WHITE_TOKEN;
-		grid[offset].texture = TEXTURE_TOP_HEX;
+		currentToken->color = COLOR_TOKEN_WHITE;
+		grid[offset].color = COLOR_HEX_TOP;
 		
 		currentToken->under = &grid[offset];
 		grid[offset].above = currentToken;
@@ -80,7 +80,7 @@ void initGame(HexPiece * grid, Team * teams)
 	unsigned int row = 1;
 	for (; row < (totalRowsCount-1)/2; row++) {
 		for (unsigned int hex = 0; hex < hexCountPerRow[row]; hex++) {
-			grid[offset].texture = TEXTURE_MID_HEX;
+			grid[offset].color = COLOR_HEX_MID;
 			grid[offset].yPos = Y_OFFSET+ (24*row);
 			grid[offset].xPos = xPosFromHex[offset];
 			grid[offset].offset = offset;
@@ -103,7 +103,7 @@ void initGame(HexPiece * grid, Team * teams)
 	
 	//middle row, with the teleports
 	for (unsigned int hex = 0; hex < hexCountPerRow[row]; hex++) {
-		grid[offset].texture = TEXTURE_MID_HEX;
+		grid[offset].color = COLOR_HEX_MID;
 		grid[offset].yPos = Y_OFFSET+ (24*row);
 		grid[offset].xPos = xPosFromHex[offset];
 		grid[offset].offset = offset;
@@ -134,7 +134,7 @@ void initGame(HexPiece * grid, Team * teams)
 	
 	for (; row < totalRowsCount-1; row++) {
 		for (unsigned int hex = 0; hex < hexCountPerRow[row]; hex++) {
-			grid[offset].texture = TEXTURE_MID_HEX;
+			grid[offset].color = COLOR_HEX_MID;
 			grid[offset].yPos = Y_OFFSET+ (24*row);
 			grid[offset].xPos = xPosFromHex[offset];
 			grid[offset].offset = offset;
@@ -160,8 +160,8 @@ void initGame(HexPiece * grid, Team * teams)
 		GameToken * currentToken = &teams[TEAM_BLACK].tokens[offset-FIRST_BLACK_HOME_ROW_PIECE];
 		currentToken->team = &teams[TEAM_BLACK];
 		
-		currentToken->color = TEXTURE_BLACK_TOKEN;
-		grid[offset].texture = TEXTURE_BOT_HEX;
+		currentToken->color = COLOR_TOKEN_BLACK;
+		grid[offset].color = COLOR_HEX_BOT;
 		
 		currentToken->under = &grid[offset];
 		grid[offset].above = currentToken;
@@ -206,7 +206,7 @@ int moveToken(GameToken * token, HexPieceSides direction)
 		return -1;
 	
 	//can't move there if it's not at the right height
-	if (nextHex->texture != (token->team->color == TEAM_WHITE ? TEXTURE_TOP_HEX : TEXTURE_BOT_HEX))
+	if (nextHex->color != (token->team->color == TEAM_WHITE ? COLOR_HEX_TOP : COLOR_HEX_BOT))
 		return -1;
 	
 	//the tokens can't return to their home row but they can move inside it if they haven't left it
@@ -241,7 +241,7 @@ int moveHex(HexPiece * sourceHex, HexPiece * destinationHex, TeamsColor team)
 		return -1;
 	
 	//can't if the source is at the bottom or the destination is at the top
-	if (destinationHex->texture == TEXTURE_TOP_HEX || sourceHex->texture == TEXTURE_BOT_HEX)
+	if (destinationHex->color == COLOR_HEX_TOP || sourceHex->color == COLOR_HEX_BOT)
 		return -1;
 	
 	//each team is not allowed to modified its own home row
@@ -251,8 +251,8 @@ int moveHex(HexPiece * sourceHex, HexPiece * destinationHex, TeamsColor team)
 	if (team == TEAM_BLACK && (destinationHex->offset >= FIRST_BLACK_HOME_ROW_PIECE || sourceHex->offset >= FIRST_BLACK_HOME_ROW_PIECE))
 		return -1;
 	
-	destinationHex->texture++;
-	sourceHex->texture--;
+	destinationHex->color = aboveHexColor(destinationHex->color);
+	sourceHex->color = underHexColor(sourceHex->color);
 	
 	return 0;
 }
