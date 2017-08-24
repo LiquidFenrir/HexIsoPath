@@ -1,6 +1,8 @@
 #include "draw.h"
+#include "uds.h"
 
 int main() {
+	udsInit(0x3000, NULL);
 	romfsInit();
 	
 	#ifdef CONSOLEMODE
@@ -24,7 +26,11 @@ int main() {
 	Team teams[homeRowSize];
 	memset(teams, 0, sizeof(Team)*homeRowSize);
 	initGame(grid, teams);
-		
+	
+	bool server = false;
+	bool networkPlay = false;
+	TeamsColor networkTeam = TEAM_WHITE;
+	
 	bool whitesTurn = true;
 	bool gameRunning = true;
 	int selectedToken = -1;
@@ -65,6 +71,25 @@ int main() {
 				pp2d_draw_text_center(GFX_TOP, 100, 1.0f, 1.0f, blackTextColor, "It's black's turn!");
 		}
 		
+		if (networkPlay) {
+			if (server)
+				pp2d_draw_text(8, SCREEN_HEIGHT-24, 0.6f, 0.6f, whiteTextColor, "Server");
+			else
+				pp2d_draw_text(8, SCREEN_HEIGHT-24, 0.6f, 0.6f, blackTextColor, "Client");
+			
+			//if it's your turn to play, send the keys you press
+			if (networkTeam == (whitesTurn ? TEAM_WHITE : TEAM_BLACK)) {
+				u32 sendKeys = kDown & ~KEY_START;
+				sendData(&sendKeys, sizeof(u32));
+			}
+			//if it's not your turn, receive the keys being pressed by the other
+			else {
+				u32 receivedKeys = 0;
+				size_t receivedSize = 0;
+				receiveData(&receivedKeys, sizeof(u32), &receivedSize);
+				kDown = receivedKeys | (kDown & KEY_START);
+			}
+			//only exception is START key to allow quitting at any time
 		}
 		
 		pp2d_draw_on(GFX_BOTTOM);
@@ -95,6 +120,8 @@ int main() {
 							movedHex = false;
 							whitesTurn = !whitesTurn;
 							handleThreats(teams);
+							mode = MODE_MOVE_HEX;
+							selectedToken = 0;
 						}
 						else {
 							movedToken = true;
@@ -110,6 +137,8 @@ int main() {
 								movedHex = false;
 								whitesTurn = !whitesTurn;
 								handleThreats(teams);
+								mode = MODE_MOVE_HEX;
+								selectedToken = 0;
 							}
 							else {
 								movedHex = true;
@@ -216,6 +245,26 @@ int main() {
 				}
 			}
 		}
+		else if (kDown & KEY_UP && !networkPlay) {
+			//the server is the white team
+			server = true;
+			ret = initComm(server);
+			DEBUG("initComm server: %.8x\n", ret);
+			if (R_SUCCEEDED(ret)) {
+				networkPlay = true;
+				networkTeam = TEAM_WHITE;
+			}
+		}
+		else if (kDown & KEY_DOWN && !networkPlay) {
+			//the client is the black team
+			server = false;
+			ret = initComm(server);
+			DEBUG("initComm client: %.8x\n", ret);
+			if (R_SUCCEEDED(ret)) {
+				networkPlay = true;
+				networkTeam = TEAM_BLACK;
+			}
+		}
 		
 		#ifdef CONSOLEMODE
 			gfxFlushBuffers();
@@ -226,6 +275,9 @@ int main() {
 		#endif
 	}
 
+	if (networkPlay)
+		exitComm(server);
+	
 	#ifdef CONSOLEMODE
 		gfxExit();
 	#else
@@ -234,6 +286,7 @@ int main() {
 	#endif
 	
 	romfsExit();
+	udsExit();
 	
 	return 0;
 }
