@@ -2,10 +2,17 @@
 
 int main() {
 	romfsInit();
-	pp2d_init();
 	
-	initScreens();
-	initTextures();
+	#ifdef CONSOLEMODE
+		gfxInitDefault();
+		consoleInit(GFX_TOP, NULL);
+	#else
+		consoleDebugInit(debugDevice_SVC);
+		
+		pp2d_init();
+		initScreens();
+		initTextures();
+	#endif
 	
 	u32 blackTextColor = RGBA8(0, 0, 0, 0xFF);
 	u32 whiteTextColor = RGBA8(0xFF, 0xFF, 0xFF, 0xFF);
@@ -36,7 +43,9 @@ int main() {
 	
 	while (aptMainLoop()) {
 		hidScanInput();
-
+		u32 kDown = hidKeysDown();
+		
+		#ifndef CONSOLEMODE
 		pp2d_begin_draw(GFX_TOP);
 		
 		pp2d_draw_text_center(GFX_TOP, 128, 0.6f, 0.6f, redTextColor, "Press START to quit!");
@@ -56,11 +65,13 @@ int main() {
 				pp2d_draw_text_center(GFX_TOP, 100, 1.0f, 1.0f, blackTextColor, "It's black's turn!");
 		}
 		
+		}
+		
 		pp2d_draw_on(GFX_BOTTOM);
 		
 		drawGrid(grid, teams, whitesTurn ? TEAM_WHITE : TEAM_BLACK, selectedToken, (HexPieceSides)selectedSide, sourceHex, destinationHex);
+		#endif
 		
-		u32 kDown = hidKeysDown();
 		if (kDown & KEY_START)
 			break;
 		else if (!gameRunning); //don't allow inputs other than quitting once a team has won
@@ -206,12 +217,22 @@ int main() {
 			}
 		}
 		
-		pp2d_end_draw();
+		#ifdef CONSOLEMODE
+			gfxFlushBuffers();
+			gfxSwapBuffers();
+			gspWaitForVBlank();
+		#else
+			pp2d_end_draw();
+		#endif
 	}
-	
-	pp2d_end_draw();
 
-	pp2d_exit();
+	#ifdef CONSOLEMODE
+		gfxExit();
+	#else
+		pp2d_end_draw();
+		pp2d_exit();
+	#endif
+	
 	romfsExit();
 	
 	return 0;
