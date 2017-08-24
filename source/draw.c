@@ -22,7 +22,9 @@ void initTextures(void)
 	pp2d_load_texture_png(TEXTURE_HEX_CURRENT, "romfs:/hex_current.png");
 	pp2d_load_texture_png(TEXTURE_HEX_SELECTED, "romfs:/hex_selected.png");
 	
-	pp2d_load_texture_png(TEXTURE_GAME_BOARD, "romfs:/game_board.png");
+	pp2d_load_texture_png(TEXTURE_TOP_BORDER, "romfs:/white_top_border.png");
+	pp2d_load_texture_png(TEXTURE_BOTTOM_BORDER, "romfs:/black_bottom_border.png");
+	pp2d_load_texture_png(TEXTURE_SIDE_BORDER, "romfs:/gray_side_border.png");
 }
 
 void drawPossibleNeighbor(HexPiece * possibleHex, bool selected)
@@ -57,12 +59,62 @@ void drawHex(HexPiece hex)
 
 void drawGrid(HexPiece * grid, Team * teams, TeamsColor team, int selectedToken, HexPieceSides selectedSide, HexPiece * sourceHex, HexPiece * destinationHex)
 {
-	pp2d_draw_texture(TEXTURE_GAME_BOARD, 0, 0);
+	unsigned int hexCountPerRow[totalRowsCount];
 	
-	//draw every single hex
-	for (unsigned int offset = 0; offset < gridCompleteSize; offset++) {
+	hexCountPerRow[0] = homeRowSize;  //white home row
+	hexCountPerRow[totalRowsCount-1] = homeRowSize; //black home row
+	
+	for (unsigned int i = 1; i < ((totalRowsCount-1)/2)+1; i++) {
+		hexCountPerRow[i] = homeRowSize+i;
+		hexCountPerRow[totalRowsCount-i-1] = homeRowSize+i;
+	}
+	
+	unsigned int offset = 0;
+	// WHITE HOME ROW
+	for (; offset < homeRowSize-1; offset++) {
+		pp2d_draw_texture(TEXTURE_TOP_BORDER, grid[offset].xPos+16, grid[offset].yPos-8);
 		drawHex(grid[offset]);
 	}
+	drawHex(grid[offset]);
+	offset++;
+	
+	// ALL IN BETWEEN
+	unsigned int row = 1;
+	for (; row < (totalRowsCount-1)/2; row++) {
+		pp2d_draw_texture_flip(TEXTURE_SIDE_BORDER, grid[offset].xPos-16, grid[offset].yPos-24, NONE);
+		for (unsigned int hex = 0; hex < hexCountPerRow[row]; hex++) {
+			drawHex(grid[offset]);
+			offset++;
+		}
+		pp2d_draw_texture_flip(TEXTURE_SIDE_BORDER, grid[offset-1].xPos+16, grid[offset-1].yPos-24, HORIZONTAL);
+	}
+	
+	pp2d_draw_texture_flip(TEXTURE_SIDE_BORDER, grid[offset].xPos-16, grid[offset].yPos-24, NONE);
+	pp2d_draw_texture_flip(TEXTURE_SIDE_BORDER, grid[offset].xPos-16, grid[offset].yPos+24, VERTICAL);
+	//middle row, with the teleports
+	for (unsigned int hex = 0; hex < hexCountPerRow[row]; hex++) {
+		drawHex(grid[offset]);
+		offset++;
+	}
+	pp2d_draw_texture_flip(TEXTURE_SIDE_BORDER, grid[offset-1].xPos+16, grid[offset-1].yPos-24, HORIZONTAL);
+	pp2d_draw_texture_flip(TEXTURE_SIDE_BORDER, grid[offset-1].xPos+16, grid[offset-1].yPos+24, BOTH);
+	row++;
+	
+	for (; row < totalRowsCount-1; row++) {
+		pp2d_draw_texture_flip(TEXTURE_SIDE_BORDER, grid[offset].xPos-16, grid[offset].yPos+24, VERTICAL);
+		for (unsigned int hex = 0; hex < hexCountPerRow[row]; hex++) {
+			drawHex(grid[offset]);
+			offset++;
+		}
+		pp2d_draw_texture_flip(TEXTURE_SIDE_BORDER, grid[offset-1].xPos+16, grid[offset-1].yPos+24, BOTH);
+	}
+	
+	// BLACK HOME ROW
+	for (; offset < gridCompleteSize-1; offset++) {
+		pp2d_draw_texture(TEXTURE_BOTTOM_BORDER, grid[offset].xPos+16, grid[offset].yPos+24);
+		drawHex(grid[offset]);
+	}
+	drawHex(grid[offset]);
 	
 	//draw every token ON TOP of the hexes, and the selector and neighbors if needed
 	for (int token = 0; token < homeRowSize; token++) {
