@@ -5,7 +5,7 @@ It works as both a .cia and a .3dsx, so people without CFW but access to the HBL
 
 # License
 
-HexIsoPath is licensed under the MIT license, and includes the MIT-licensed 2D graphics library for 3DS, [pp2p](https://github.com/BernardoGiordano/pp2d/) by [BernardoGiordano](https://github.com/BernardoGiordano).
+HexIsoPath is licensed under the MIT license, and includes the MIT-licensed 2D graphics library for 3DS, pp2d by [BernardoGiordano](https://github.com/BernardoGiordano).
 
 # The game
 
@@ -14,4 +14,4 @@ Unfortunately, I'm not the manual kind of guy (though I would like to be), but h
 
 # Rules
 
-`<TODO>`. If you want to learn in an other way than randomly pressing buttons, you can watch [the video](https://www.youtube.com/watch?v=Wz6q03b8R6U).
+`<TODO>`. Instructions are available by holding SELECT. If you want to learn in an other way than randomly pressing buttons, you can watch [the video](https://www.youtube.com/watch?v=Wz6q03b8R6U).

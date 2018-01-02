@@ -50,49 +50,62 @@ int main() {
 	while (aptMainLoop()) {
 		hidScanInput();
 		u32 kDown = hidKeysDown();
+		u32 kHeld = hidKeysHeld();
 		
 		#ifndef CONSOLEMODE
-		pp2d_begin_draw(GFX_TOP);
+		pp2d_begin_draw(GFX_TOP, GFX_LEFT);
 		
-		pp2d_draw_text_center(GFX_TOP, 128, 0.6f, 0.6f, redTextColor, "Press START to quit!");
-		
-		if (teams[TEAM_WHITE].winner) {
-			pp2d_draw_text_center(GFX_TOP, 100, 1.0f, 1.0f, whiteTextColor, "White team won!");
-			gameRunning = false;
-		}
-		else if (teams[TEAM_BLACK].winner) {
-			pp2d_draw_text_center(GFX_TOP, 100, 1.0f, 1.0f, blackTextColor, "Black team won!");
-			gameRunning = false;
+		if ((kDown|kHeld) & KEY_SELECT) {
+			pp2d_draw_text_center(GFX_TOP, 60, 0.6f, 0.6f, redTextColor, "Press \uE079 to start playing as the server (white)");
+			pp2d_draw_text_center(GFX_TOP, 76, 0.6f, 0.6f, redTextColor, "Press \uE07A to start playing as a client (black)");
+			
+			pp2d_draw_text_center(GFX_TOP, 100, 0.6f, 0.6f, redTextColor, "Use \uE07E to move the cursor");
+			pp2d_draw_text_center(GFX_TOP, 116, 0.6f, 0.6f, redTextColor, "Use \uE004 and \uE005 to change the selected token");
+			pp2d_draw_text_center(GFX_TOP, 132, 0.6f, 0.6f, redTextColor, "Press \uE003 to switch between moving tokens and hexes");
+			pp2d_draw_text_center(GFX_TOP, 148, 0.6f, 0.6f, redTextColor, "Press \uE000 to move");
 		}
 		else {
-			if (whitesTurn)
-				pp2d_draw_text_center(GFX_TOP, 100, 1.0f, 1.0f, whiteTextColor, "It's white's turn!");
-			else
-				pp2d_draw_text_center(GFX_TOP, 100, 1.0f, 1.0f, blackTextColor, "It's black's turn!");
-		}
-		
-		if (networkPlay) {
-			if (server)
-				pp2d_draw_text(8, SCREEN_HEIGHT-24, 0.6f, 0.6f, whiteTextColor, "Server");
-			else
-				pp2d_draw_text(8, SCREEN_HEIGHT-24, 0.6f, 0.6f, blackTextColor, "Client");
+			pp2d_draw_text_center(GFX_TOP, 128, 0.6f, 0.6f, redTextColor, "Press START to quit");
+			pp2d_draw_text_center(GFX_TOP, 144, 0.6f, 0.6f, redTextColor, "Press SELECT for instructions");
 			
-			//if it's your turn to play, send the keys you press
-			if (networkTeam == (whitesTurn ? TEAM_WHITE : TEAM_BLACK)) {
-				u32 sendKeys = kDown & ~KEY_START;
-				sendData(&sendKeys, sizeof(u32));
+			if (teams[TEAM_WHITE].winner) {
+				pp2d_draw_text_center(GFX_TOP, 100, 1.0f, 1.0f, whiteTextColor, "White team won!");
+				gameRunning = false;
 			}
-			//if it's not your turn, receive the keys being pressed by the other
+			else if (teams[TEAM_BLACK].winner) {
+				pp2d_draw_text_center(GFX_TOP, 100, 1.0f, 1.0f, blackTextColor, "Black team won!");
+				gameRunning = false;
+			}
 			else {
-				u32 receivedKeys = 0;
-				size_t receivedSize = 0;
-				receiveData(&receivedKeys, sizeof(u32), &receivedSize);
-				kDown = receivedKeys | (kDown & KEY_START);
+				if (whitesTurn)
+					pp2d_draw_text_center(GFX_TOP, 100, 1.0f, 1.0f, whiteTextColor, "It's white's turn!");
+				else
+					pp2d_draw_text_center(GFX_TOP, 100, 1.0f, 1.0f, blackTextColor, "It's black's turn!");
 			}
-			//only exception is START key to allow quitting at any time
+			
+			if (networkPlay) {
+				if (server)
+					pp2d_draw_text(8, SCREEN_HEIGHT-24, 0.6f, 0.6f, whiteTextColor, "Server");
+				else
+					pp2d_draw_text(8, SCREEN_HEIGHT-24, 0.6f, 0.6f, blackTextColor, "Client");
+				
+				//if it's your turn to play, send the keys you press
+				if (networkTeam == (whitesTurn ? TEAM_WHITE : TEAM_BLACK)) {
+					u32 sendKeys = kDown & ~KEY_START;
+					sendData(&sendKeys, sizeof(u32));
+				}
+				//if it's not your turn, receive the keys being pressed by the other
+				else {
+					u32 receivedKeys = 0;
+					size_t receivedSize = 0;
+					receiveData(&receivedKeys, sizeof(u32), &receivedSize);
+					kDown = receivedKeys | (kDown & KEY_START);
+				}
+				//only exception is START key to allow quitting at any time
+			}
 		}
 		
-		pp2d_draw_on(GFX_BOTTOM);
+		pp2d_draw_on(GFX_BOTTOM, GFX_LEFT);
 		
 		drawGrid(grid, teams, whitesTurn ? TEAM_WHITE : TEAM_BLACK, selectedToken, (HexPieceSides)selectedSide, sourceHex, destinationHex);
 		#endif
